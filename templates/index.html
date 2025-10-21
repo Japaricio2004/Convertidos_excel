@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
       min-height: 100vh;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
@@ -44,30 +44,33 @@
     .excel-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85em;
-      min-width: 800px;
+      font-size: 0.9em;
+      min-width: 1200px;
+      line-height: 1.35;
     }
     
     .excel-table th {
-      background: linear-gradient(45deg, #667eea, #764ba2);
+      background: linear-gradient(45deg, #2ecc71, #27ae60);
       color: white;
-      padding: 12px 8px;
+      padding: 14px 12px;
       text-align: left;
       font-weight: 600;
       border: 1px solid #dee2e6;
       position: sticky;
       top: 0;
       z-index: 10;
+      font-size: 0.95em;
     }
     
     .excel-table td {
-      padding: 10px 8px;
+      padding: 12px 12px;
       border: 1px solid #dee2e6;
       vertical-align: top;
-      max-width: 300px;
+      max-width: 350px;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
     
     .excel-table tr:nth-child(even) {
@@ -75,12 +78,12 @@
     }
     
     .excel-table tr:hover {
-      background-color: #e3f2fd;
+      background-color: #e8f5e9;
       transition: background-color 0.2s;
     }
     
     .table-container {
-      max-height: 600px;
+      max-height: 700px;
       overflow: auto;
       border: 1px solid #dee2e6;
       border-radius: 8px;
@@ -88,7 +91,7 @@
     }
     
     .sheet-header {
-      background: linear-gradient(45deg, #667eea, #764ba2);
+      background: linear-gradient(45deg, #2ecc71, #27ae60);
       color: white;
       padding: 15px 20px;
       border-radius: 10px 10px 0 0;
@@ -118,12 +121,12 @@
     }
     
     .table-container::-webkit-scrollbar-thumb {
-      background: #667eea;
+      background: #2ecc71;
       border-radius: 4px;
     }
     
     .table-container::-webkit-scrollbar-thumb:hover {
-      background: #764ba2;
+      background: #27ae60;
     }
 
     .header-section {
@@ -149,8 +152,8 @@
       }
       
       .excel-table {
-        font-size: 0.75em;
-        min-width: 600px;
+        font-size: 0.8em;
+        min-width: 900px;
       }
     }
   </style>

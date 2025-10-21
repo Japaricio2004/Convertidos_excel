@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
       min-height: 100vh;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
@@ -29,7 +29,7 @@
     }
     
     .card-header {
-      background: linear-gradient(45deg, #667eea, #764ba2);
+      background: linear-gradient(45deg, #2ecc71, #27ae60);
       color: white;
       border-radius: 10px 10px 0 0 !important;
       font-weight: 600;
@@ -37,13 +37,15 @@
     }
     
     .table-container {
-      max-height: 500px;
+      max-height: 700px;
       overflow: auto;
     }
     
     .table {
       width: 100%;
-      font-size: 0.9em;
+      font-size: 0.95em;
+      line-height: 1.35;
+      min-width: 1200px;
     }
     
     .table th {
@@ -51,16 +53,18 @@
       position: sticky;
       top: 0;
       border: 1px solid #dee2e6;
-      padding: 12px 8px;
+      padding: 14px 12px;
+      font-size: 0.95em;
     }
     
     .table td {
-      padding: 10px 8px;
+      padding: 12px 12px;
       border: 1px solid #dee2e6;
-      max-width: 300px;
+      max-width: 350px;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
     
     .header-section {
