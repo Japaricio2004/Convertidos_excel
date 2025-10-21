@@ -179,6 +179,88 @@
       <input type="file" id="fileElem" accept=".xlsx,.xls" style="display:none;">
     </div>
 
+    <!-- Panel de fórmulas -->
+    <div id="formula-panel" class="sheet-container" style="display:none;">
+      <div class="sheet-header">
+        <h4 class="mb-0"><i class="fas fa-calculator me-2"></i>Fórmulas</h4>
+        <span class="stats-badge">Evalúa fórmulas estilo Excel (SUM, AVERAGE, MIN, MAX, COUNT) y expresiones como (A/B)*100</span>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Hoja</label>
+          <select id="formula-sheet" class="form-select"></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Modo</label>
+          <select id="formula-mode" class="form-select">
+            <option value="row">Por fila (añade columna)</option>
+            <option value="total">Total (resultado único)</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Nombre de columna/resultado</label>
+          <input id="formula-name" class="form-control" placeholder="Resultado">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Formato</label>
+          <select id="formula-format" class="form-select">
+            <option value="">Auto</option>
+            <option value="number:0.00">Número 0.00</option>
+            <option value="percent:0.00">Porcentaje 0.00%</option>
+          </select>
+        </div>
+
+        <!-- Operaciones tipo Excel (selección A op B) -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header bg-light"><strong>Operación rápida tipo Excel</strong></div>
+            <div class="card-body row g-3 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label">Columna A</label>
+                <select id="col-a" class="form-select"></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Operación</label>
+                <select id="op" class="form-select">
+                  <option value="+">A + B</option>
+                  <option value="-">A - B</option>
+                  <option value="*">A × B</option>
+                  <option value="/">A ÷ B</option>
+                  <option value="(A/B)*100">(A/B) × 100</option>
+                  <option value="SUM">SUM(A,B)</option>
+                  <option value="AVERAGE">AVERAGE(A,B)</option>
+                  <option value="MIN">MIN(A,B)</option>
+                  <option value="MAX">MAX(A,B)</option>
+                  <option value="COUNT">COUNT(A,B)</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Columna B</label>
+                <select id="col-b" class="form-select"></select>
+              </div>
+              <div class="col-12 d-flex gap-2">
+                <button id="btn-preview-op" class="btn btn-outline-secondary"><i class="fas fa-eye me-2"></i>Vista previa (1ª fila)</button>
+                <button id="btn-apply-op" class="btn btn-primary"><i class="fas fa-arrow-down me-2"></i>Aplicar a toda la columna</button>
+              </div>
+              <div id="op-preview" class="col-12" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modo libre -->
+        <div class="col-12">
+          <label class="form-label">Fórmula (modo libre)</label>
+          <input id="formula-expr" class="form-control" placeholder="Ejemplos: SUM(Kilos, Envases), (Kilos/Envases)*100">
+          <div class="form-text">Usa nombres de columnas tal como aparecen en la tabla. También se admiten referencias entre corchetes: [Nombre de Columna]. Funciones: SUM, AVERAGE, MIN, MAX, COUNT.</div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button id="btn-apply-formula" class="btn btn-success"><i class="fas fa-equals me-2"></i>Aplicar</button>
+          <button id="btn-export-formula" class="btn btn-outline-success"><i class="fas fa-file-export me-2"></i>Descargar Excel</button>
+        </div>
+        <div id="formula-result" class="col-12" style="display:none;"></div>
+      </div>
+    </div>
+
     <!-- Output de resultados -->
     <div id="output"></div>
 
@@ -268,6 +350,21 @@
         </button>
       `;
 
+      // Mostrar panel de fórmulas
+      const formulaPanel = document.getElementById('formula-panel');
+      formulaPanel.style.display = 'block';
+      const sheetSelect = document.getElementById('formula-sheet');
+      sheetSelect.innerHTML = Object.keys(data).map(n => `<option value="${n}">${n}</option>`).join('');
+
+      // Alimentar columnas A/B con la primera hoja inicialmente desde backend
+      const firstSheetName = Object.keys(data)[0];
+      feedColumnsFromBackend(firstSheetName);
+
+      // Al cambiar hoja en panel de fórmula, recargar columnas A/B desde backend
+      sheetSelect.addEventListener('change', (e) => {
+        feedColumnsFromBackend(e.target.value);
+      });
+
       output.innerHTML = '';
       
       for (const [sheetName, html] of Object.entries(data)) {
@@ -302,7 +399,7 @@
                 ${rowCount} filas × ${colCount} columnas
               </span>
             </div>
-            <div class="table-container">
+            <div class="table-container" data-sheet="${sheetName}">
               ${table.outerHTML}
             </div>
           `;
@@ -368,8 +465,202 @@
       });
     }
 
+    // Helpers para extraer encabezados de una tabla HTML y llenar selects A/B
+    function getHeadersForSheet(sheetName) {
+      const tableContainer = document.querySelector(`.table-container[data-sheet="${sheetName}"]`);
+      if (!tableContainer) return [];
+      const ths = tableContainer.querySelectorAll('thead th');
+      if (ths.length) return Array.from(ths).map(th => th.textContent.trim());
+      // Si no hay thead, tomar primera fila
+      const firstRowTds = tableContainer.querySelectorAll('tbody tr:first-child td');
+      return Array.from(firstRowTds).map((td, idx) => `Columna ${idx+1}`);
+    }
+
+    async function feedColumnsFromBackend(sheetName) {
+      try {
+        const res = await fetch(`/columns?sheet=${encodeURIComponent(sheetName)}`);
+        const data = await res.json();
+        const headers = data.columns || [];
+        const colA = document.getElementById('col-a');
+        const colB = document.getElementById('col-b');
+        const opts = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+        colA.innerHTML = opts;
+        colB.innerHTML = opts;
+      } catch (e) {
+        console.error('No se pudieron cargar columnas:', e);
+      }
+    }
+
     // Ejecutar al cargar la página
     document.addEventListener('DOMContentLoaded', improveTables);
+
+    // Aplicar fórmula
+    document.addEventListener('click', async (e) => {
+      if (e.target.id === 'btn-apply-formula') {
+        const sheet = document.getElementById('formula-sheet').value;
+        const mode = document.getElementById('formula-mode').value;
+        const name = document.getElementById('formula-name').value || 'Resultado';
+        const expr = document.getElementById('formula-expr').value;
+        const fmt = document.getElementById('formula-format').value;
+        
+        const res = await fetch('/formula', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheet, mode, name, expr, format: fmt })
+        }).then(r => r.json());
+
+        const resultDiv = document.getElementById('formula-result');
+        resultDiv.style.display = 'block';
+
+        if (res.error) {
+          resultDiv.innerHTML = `<div class="alert alert-danger"><i class=\"fas fa-times-circle me-2\"></i>${res.error}</div>`;
+          return;
+        }
+
+        if (mode === 'row' && res.html) {
+          // Reemplazar la tabla de esa hoja
+          const container = document.querySelector(`.table-container[data-sheet="${sheet}"]`);
+          if (container) container.innerHTML = res.html;
+          resultDiv.innerHTML = `<div class="alert alert-success"><i class=\"fas fa-check-circle me-2\"></i>Columna "${name}" agregada a la hoja ${sheet}.</div>`;
+        } else if (mode === 'total') {
+          const formatted = res.total_formatted ?? res.total;
+          resultDiv.innerHTML = `<div class="alert alert-info"><i class=\"fas fa-equals me-2\"></i>Resultado total (${name}): <strong>${formatted}</strong></div>`;
+        }
+      }
+      if (e.target.id === 'btn-export-formula') {
+        // Descargar Excel con los mismos parámetros
+        const sheet = document.getElementById('formula-sheet').value;
+        const mode = document.getElementById('formula-mode').value;
+        const name = document.getElementById('formula-name').value || 'Resultado';
+        let expr = document.getElementById('formula-expr').value;
+        const fmt = document.getElementById('formula-format').value;
+
+        // Fallback: si la fórmula libre está vacía, construir desde Operación rápida
+        if (!expr || !expr.trim()) {
+          const aSel = document.getElementById('col-a');
+          const bSel = document.getElementById('col-b');
+          const opSel = document.getElementById('op');
+          if (aSel && bSel && opSel && aSel.value && bSel.value && opSel.value) {
+            expr = buildExpr(aSel.value, bSel.value, opSel.value);
+          }
+        }
+        if (!expr || !expr.trim()) {
+          alert('Necesitas ingresar una fórmula o seleccionar columnas A/B y una operación.');
+          return;
+        }
+
+        try {
+          const resp = await fetch('/formula/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sheet, mode, name, expr, format: fmt })
+          });
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            alert('Error al exportar: ' + (err.error || resp.statusText));
+            return;
+          }
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${sheet}-${name}.xlsx`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (e2) {
+          alert('Error exportando: ' + e2.message);
+        }
+      }
+    });
+
+    // Vista previa rápida (primera fila)
+    document.addEventListener('click', async (e) => {
+      if (e.target.id === 'btn-preview-op') {
+        const sheet = document.getElementById('formula-sheet').value;
+        const a = document.getElementById('col-a').value;
+        const b = document.getElementById('col-b').value;
+        const op = document.getElementById('op').value;
+
+        // Construir expresión
+        const expr = buildExpr(a, b, op);
+        const fmt = op === '(A/B)*100' ? 'percent:0.00' : '';
+
+        // Pedimos total solo de la primera fila emulando vista previa simple
+        const res = await fetch('/formula', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheet, mode: 'row', name: '__preview__', expr, format: fmt })
+        }).then(r => r.json());
+
+        const preview = document.getElementById('op-preview');
+        preview.style.display = 'block';
+        if (res.error) {
+          preview.innerHTML = `<div class="alert alert-danger"><i class=\"fas fa-times-circle me-2\"></i>${res.error}</div>`;
+          return;
+        }
+        // Tomar la primera celda de la columna agregada
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = res.html;
+        const firstCell = tempDiv.querySelector('tbody tr td:last-child');
+        const val = firstCell ? firstCell.textContent : '(sin datos)';
+        preview.innerHTML = `<div class="alert alert-secondary"><strong>Vista previa</strong> ${a} ${opLabel(op)} ${b} = <code>${val}</code> (fila 1)</div>`;
+      }
+    });
+
+    // Aplicar operación a toda la columna
+    document.addEventListener('click', async (e) => {
+      if (e.target.id === 'btn-apply-op') {
+        const sheet = document.getElementById('formula-sheet').value;
+        const a = document.getElementById('col-a').value;
+        const b = document.getElementById('col-b').value;
+        const op = document.getElementById('op').value;
+        const name = document.getElementById('formula-name').value || `${a} ${opLabel(op)} ${b}`;
+        const fmt = document.getElementById('formula-format').value || (op === '(A/B)*100' ? 'percent:0.00' : '');
+        const expr = buildExpr(a, b, op);
+
+        const res = await fetch('/formula', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheet, mode: 'row', name, expr, format: fmt })
+        }).then(r => r.json());
+
+        const resultDiv = document.getElementById('formula-result');
+        resultDiv.style.display = 'block';
+        if (res.error) {
+          resultDiv.innerHTML = `<div class="alert alert-danger"><i class=\"fas fa-times-circle me-2\"></i>${res.error}</div>`;
+          return;
+        }
+        // Reemplazar tabla de la hoja
+        const container = document.querySelector(`.table-container[data-sheet="${sheet}"]`);
+        if (container) container.innerHTML = res.html;
+        resultDiv.innerHTML = `<div class="alert alert-success"><i class=\"fas fa-check-circle me-2\"></i>Columna "${name}" creada con ${a} ${opLabel(op)} ${b}.</div>`;
+      }
+    });
+
+    function buildExpr(a, b, op) {
+      // Usar referencias con corchetes por seguridad ante nombres con espacios/símbolos
+      const A = `[${a}]`;
+      const B = `[${b}]`;
+      switch (op) {
+        case '+': return `${A}+${B}`;
+        case '-': return `${A}-${B}`;
+        case '*': return `${A}*${B}`;
+        case '/': return `${A}/${B}`;
+        case '(A/B)*100': return `(${A}/${B})*100`;
+        case 'SUM': return `SUM(${A},${B})`;
+        case 'AVERAGE': return `AVERAGE(${A},${B})`;
+        case 'MIN': return `MIN(${A},${B})`;
+        case 'MAX': return `MAX(${A},${B})`;
+        case 'COUNT': return `COUNT(${A},${B})`;
+        default: return `${A}+${B}`;
+      }
+    }
+
+    function opLabel(op) {
+      return op === '*' ? '×' : op === '/' ? '÷' : op;
+    }
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
