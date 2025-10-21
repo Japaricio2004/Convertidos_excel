@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>📊 Resultados del Excel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .main-container {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      margin-top: 30px;
+      padding: 30px;
+    }
+    
+    .sheet-card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+      margin-bottom: 25px;
+      overflow: hidden;
+    }
+    
+    .card-header {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border-radius: 10px 10px 0 0 !important;
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+    
+    .table-container {
+      max-height: 500px;
+      overflow: auto;
+    }
+    
+    .table {
+      width: 100%;
+      font-size: 0.9em;
+    }
+    
+    .table th {
+      background: #f8f9fa;
+      position: sticky;
+      top: 0;
+      border: 1px solid #dee2e6;
+      padding: 12px 8px;
+    }
+    
+    .table td {
+      padding: 10px 8px;
+      border: 1px solid #dee2e6;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .header-section {
+      text-align: center;
+      color: white;
+      padding: 20px 0;
+    }
+    
+    .btn-back {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header-section">
+    <div class="container">
+      <h1 class="display-4 fw-bold">
+        <i class="fas fa-file-excel me-3"></i>Resultados del Excel
+      </h1>
+      <p class="lead">Visualización completa de todas las hojas</p>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="container main-container">
+    {% if sheets %}
+      {% for sheet_name, html_table in sheets.items() %}
+        <div class="card sheet-card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>
+              <i class="fas fa-table me-2"></i>
+              Hoja: <strong>{{ sheet_name }}</strong>
+            </span>
+            <span class="badge bg-light text-dark">
+              <i class="fas fa-layer-group me-1"></i>
+              {{ sheets|length }} hojas
+            </span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-container">
+              {{ html_table | safe }}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-5">
+        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+        <h3>No se encontraron datos</h3>
+        <p class="text-muted">El archivo Excel no contiene datos o no pudo ser procesado.</p>
+        <a href="/" class="btn btn-primary">
+          <i class="fas fa-arrow-left me-2"></i>Volver al inicio
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Botón de volver -->
+  <a href="/" class="btn btn-primary btn-lg rounded-circle shadow btn-back">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
