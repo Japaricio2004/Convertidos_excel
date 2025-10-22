@@ -148,6 +148,141 @@ def formula():
             ])),
         }
 
+        # Funciones en español estilo Excel
+        def _ensure_series(x):
+            if isinstance(x, pd.Series):
+                return x
+            try:
+                return pd.Series([x]*len(df))
+            except Exception:
+                return pd.Series([np.nan]*len(df))
+
+        def __SI__(cond, v_true, v_false):
+            cond_s = _ensure_series(cond).astype(bool)
+            a = _ensure_series(v_true)
+            b = _ensure_series(v_false)
+            return pd.Series(np.where(cond_s, a, b)) if mode=='row' else (v_true if bool(cond) else v_false)
+
+        def __CONCATENAR__(*args):
+            cols = [_ensure_series(a).astype(str).fillna('') for a in args]
+            if mode=='row':
+                out = cols[0]
+                for c in cols[1:]:
+                    out = out + c
+                return out
+            else:
+                return ''.join(str(a) for a in args)
+
+        def __REDONDEAR__(num, dec):
+            if mode=='row':
+                n = int(float(dec)) if not isinstance(dec, pd.Series) else int(float(dec.iloc[0] or 0))
+                return pd.to_numeric(_ensure_series(num), errors='coerce').round(n)
+            else:
+                return round(float(num), int(float(dec)))
+
+        def __MAYUSC__(txt):
+            if mode=='row':
+                return _ensure_series(txt).astype(str).str.upper()
+            return str(txt).upper()
+
+        def __NOMPROPIO__(txt):
+            if mode=='row':
+                return _ensure_series(txt).astype(str).str.title()
+            return str(txt).title()
+
+        def __LARGO__(txt):
+            if mode=='row':
+                return _ensure_series(txt).astype(str).str.len()
+            return len(str(txt))
+
+        def __ALEATORIO_ENTRE__(a, b):
+            try:
+                lo = int(float(a if not isinstance(a, pd.Series) else a.fillna(0).iloc[0]))
+                hi = int(float(b if not isinstance(b, pd.Series) else b.fillna(0).iloc[0]))
+            except Exception:
+                lo, hi = 0, 1
+            if mode=='row':
+                size = len(df)
+                return pd.Series(np.random.randint(lo, hi+1, size=size))
+            else:
+                return int(np.random.randint(lo, hi+1))
+
+        def __DIAS_LAB__(f1, f2, feriados=None):
+            feriados = feriados or []
+            def to_np_date(x):
+                x = pd.to_datetime(x, errors='coerce')
+                return np.datetime64(x.date()) if pd.notna(x) else None
+            def count_days(a, b):
+                a = pd.to_datetime(a, errors='coerce')
+                b = pd.to_datetime(b, errors='coerce')
+                if pd.isna(a) or pd.isna(b):
+                    return np.nan
+                hol = [np.datetime64(pd.to_datetime(h, errors='coerce').date()) for h in (feriados if isinstance(feriados, (list, tuple)) else []) if pd.notna(pd.to_datetime(h, errors='coerce'))]
+                try:
+                    return np.busday_count(a.date(), b.date(), weekmask='1111100', holidays=hol)
+                except Exception:
+                    return np.nan
+            if mode=='row':
+                s1 = _ensure_series(f1)
+                s2 = _ensure_series(f2)
+                return pd.Series([count_days(a,b) for a,b in zip(s1, s2)])
+            else:
+                return float(count_days(f1, f2))
+
+        def __BUSCARV__(lookup, *args):
+            # args puede ser (col1, col2, ..., idx[, exact]) o (cols_tuple, idx[, exact])
+            exact = True
+            cols = []
+            # Extraer idx y exact si vienen al final
+            args_list = list(args)
+            if len(args_list) >= 2 and isinstance(args_list[-1], (bool, np.bool_)):
+                exact = bool(args_list.pop())
+            # idx
+            if not args_list:
+                return pd.Series([np.nan]*len(df)) if mode=='row' else np.nan
+            idx = args_list.pop()
+            try:
+                idx = int(float(idx))
+            except Exception:
+                idx = 1
+            # Rango de columnas
+            if len(args_list)==1 and isinstance(args_list[0], pd.Series) is False:
+                # puede venir como string de nombres, pero con el parser actual no empaquetamos tuplas
+                pass
+            # Construir lista de series de columnas desde args_list
+            # Aceptar que vengan como referencias de columna (Series) en orden
+            for a in args_list:
+                if isinstance(a, pd.Series):
+                    cols.append(a)
+            if len(cols) < 2:
+                return pd.Series([np.nan]*len(df)) if mode=='row' else np.nan
+            idx = max(1, min(idx, len(cols)))
+            key_series = pd.to_numeric(cols[0], errors='ignore')
+            ret_series = cols[idx-1]
+            # Construir mapping
+            map_df = pd.DataFrame({f'c{i}': c for i, c in enumerate(cols)})
+            mapping = pd.Series(map_df[f'c{idx-1}'].values, index=map_df['c0']).to_dict()
+            lk = lookup if isinstance(lookup, pd.Series) else _ensure_series(lookup)
+            res = lk.map(mapping)
+            if not exact:
+                # para aproximado, devolver exacto si existe, else NaN (implementación simple)
+                return res
+            return res
+
+        # Añadir alias en español que apunten a implementaciones
+        func_map_es = {
+            '__PROMEDIO__': func_map['AVERAGE'],
+            '__SI__': __SI__,
+            '__CONCATENAR__': __CONCATENAR__,
+            '__DIAS_LAB__': __DIAS_LAB__,
+            '__REDONDEAR__': __REDONDEAR__,
+            '__ALEATORIO_ENTRE__': __ALEATORIO_ENTRE__,
+            '__MAYUSC__': __MAYUSC__,
+            '__NOMPROPIO__': __NOMPROPIO__,
+            '__LARGO__': __LARGO__,
+            '__BUSCARV__': __BUSCARV__,
+        }
+
         # Reemplazar nombres de columnas por variables seguras
         local_ctx = {}
         for col in df.columns:
@@ -179,7 +314,22 @@ def formula():
         expr_py = expr
         # Normalizar separadores decimales y %
         expr_py = expr_py.replace(";", ",")
-        # Reemplazo de funciones (SUM(Col1,Col2)) -> __SUM__(Col1,Col2)
+        # Normalizar funciones en español con y sin acento y con punto
+        replacements = [
+            (r"\bPROMEDIO\s*\(", "__PROMEDIO__("),
+            (r"\bSI\s*\(", "__SI__("),
+            (r"\bCONCATENAR\s*\(", "__CONCATENAR__("),
+            (r"D[ÍI]AS[\._]LAB\s*\(", "__DIAS_LAB__("),
+            (r"\bREDONDEAR\s*\(", "__REDONDEAR__("),
+            (r"ALEATORIO[\._]ENTRE\s*\(", "__ALEATORIO_ENTRE__("),
+            (r"\bMAYUSC\s*\(", "__MAYUSC__("),
+            (r"\bNOMPROPIO\s*\(", "__NOMPROPIO__("),
+            (r"\bLARGO\s*\(", "__LARGO__("),
+            (r"\bBUSCARV\s*\(", "__BUSCARV__("),
+        ]
+        for pat, rep in replacements:
+            expr_py = re.sub(pat, rep, expr_py, flags=re.IGNORECASE)
+        # Reemplazo de funciones en inglés existentes
         for fn in func_map.keys():
             expr_py = re.sub(rf"\b{fn}\s*\(", f"__{fn}__(", expr_py, flags=re.IGNORECASE)
         
@@ -210,6 +360,8 @@ def formula():
         # Inyectar funciones
         for fn, impl in func_map.items():
             local_ctx[f"__{fn}__"] = (lambda f: f)(impl)
+        for fn, impl in func_map_es.items():
+            local_ctx[fn] = (lambda f: f)(impl)
 
         # Evaluación
         try:
