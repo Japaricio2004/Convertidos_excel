@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#2ecc71"/>
+      <stop offset="1" stop-color="#27ae60"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" rx="12" fill="url(#g)" />
+  <g font-family="Segoe UI, Arial, sans-serif" fill="#fff">
+    <text x="40" y="70" font-size="28" font-weight="700">Excel Viewer Pro — Demo (placeholder)</text>
+    <rect x="40" y="100" width="1120" height="240" rx="8" fill="#ffffff" opacity="0.08" />
+
+    <g transform="translate(60,120)" opacity="0.95">
+      <!-- Mock table header -->
+      <rect x="0" y="0" width="1080" height="38" fill="#ffffff" opacity="0.12" rx="6"/>
+      <text x="12" y="26" font-size="16" font-weight="600">Hoja: Ventas - 12 filas × 6 columnas</text>
+
+      <!-- Mock rows -->
+      <g transform="translate(0,44)">
+        <rect x="0" y="0" width="1080" height="28" fill="#ffffff" opacity="0.04" rx="4"/>
+        <rect x="0" y="36" width="1080" height="28" fill="#ffffff" opacity="0.00" rx="4"/>
+      </g>
+
+      <text x="12" y="200" font-size="14" fill="#e9ffe9">(Esta imagen es un placeholder — reemplázala por capturas reales en ./assets/)</text>
+    </g>
+  </g>
+</svg>

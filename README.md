@@ -1,4 +1,4 @@
-# 📊 Excel Viewer Pro — ¡Hazlo fácil, hazlo chévere!
+# 📊 Excel Viewer Pro 
 
 Una pequeña app web en Flask para subir, visualizar y trabajar con archivos Excel (.xlsx/.xls/.xlsm/.xlsb). Pensada para análisis rápido: previsualiza hojas, evalúa fórmulas estilo Excel y exporta resultados con un solo clic.
 
@@ -49,6 +49,31 @@ Tip: si tienes el launcher `py`, usa `py -3 .\app.py`.
 1. Arrastra o selecciona tu archivo Excel (.xlsx/.xls).
 2. Elige la hoja y usa el panel de fórmulas para crear columnas nuevas o calcular totales.
 3. Exporta el resultado a Excel si lo necesitas.
+
+## Demo visual y archivo de ejemplo
+
+He incluido un `placeholder` visual en `assets/demo_screenshot.svg` y un pequeño script que genera un Excel de ejemplo (`sample.xlsx`) para probar la app rápidamente.
+
+Pasos rápidos:
+
+1. Generar archivo de ejemplo (desde PowerShell en la raíz del proyecto):
+
+```powershell
+python .\scripts\generate_sample.py
+```
+
+2. Ejecutar la app y subir `sample.xlsx` desde la UI:
+
+```powershell
+python .\app.py
+# abrir http://127.0.0.1:5000/ y arrastrar `sample.xlsx`
+```
+
+3. Ver captura demo (placeholder) incluida aquí:
+
+![Demo placeholder](./assets/demo_screenshot.svg)
+
+Nota: la imagen en `assets/demo_screenshot.svg` es un placeholder SVG. Para reemplazarla por capturas reales, copia tus PNG/GIF en `assets/` y edita la ruta en este README.
 
 ## Endpoints (útiles para integración)
 
@@ -108,6 +133,4 @@ Si quieres mejorar la app: crea un issue con tu idea o un PR con pruebas mínima
 Desarrollado por Jorge Aparicio — diseñado para agilizar análisis rápidos de Excel.
 
 ---
-
-¿Quieres que deje el README aún más visual (con capturas pequeñas, GIF o ejemplos de Excel)? Puedo añadirlo con un archivo `assets/` y una pequeña demo.
 
